@@ -132,7 +132,21 @@ if __name__ == "__main__":
 
 ----------------------------------------------------------------
 #terrain map
-
+''' i/p format
+First line: Instruction of which algorithm to use, as a string: BFS, UCS or A*
+Second line: Two strictly positive 32-bit integers separated by one space character, for "W H" the number of columns (width) and rows (height), in cells, of the land map.
+Third line: Two positive 32-bit integers separated by one space character, for "X Y" the coordinates (in cells) of the starting position for our party. 0 ≤ X ≤ W-1 and 0 < Y < H-1 (that is, we use 0-based indexing into the map; X increases when moving East and Y increases when moving South; (0,0) is the North West corner of the map). Starting point remains the same for each of the N target sites below.
+Fourth line: Positive 32-bit integer number for the maximum rock height that the wagon can
+climb between two cells. The difference of heights between two adjacent cells must be smaller than or equal (≤) to this value for the wagon to be able to travel from one cell to the other.
+Fifth line:
+Strictly positive 32-bit integer N, the number of settling sites.
+Next N lines:
+Two positive 32-bit integers separated by one space character, for "X Y" the coordinates (in cells) of each target settling site. 0 ≤ X ≤ W-1 and 0 ≤ Y ≤ H-1 (that is, we again use 0-based indexing into the map). These N target settling sites are not related to each other, so you will run your search algorithm from the starting point to each target site in turn, and write each result to the output as specified below. We will never give you a target settling site that is the same as the starting point.
+Next
+H lines: W 32-bit integer numbers separated by any numbers of spaces for the M values of each of the W cells in each row of the map. Each number can represent the following cases:
+M >= 0, muddy land with height 0 and mud-level M
+M < 0, rock of height || with mud-level 0
+'''
 from queue import Queue
 from math import sqrt, floor
 
