@@ -1,0 +1,629 @@
+######################
+#Water jug - dfs
+
+def gcd(a, b):
+    if b==0:
+        return a
+    return gcd(b, a%b)
+
+def pourSteps(to, fro ,d):
+    curr = fro
+    toJ = 0
+    step = 1 
+    
+    while(curr != d and toJ != d):
+        temp = min(curr, to-toJ)
+        toJ += temp
+        curr -= temp
+        step += 1 
+        
+        if curr==d or toJ==d:
+            break
+        
+        if curr==0:
+            curr = fro
+            step += 1
+        
+        if toJ == to:
+            toJ = 0
+            step += 1
+    return step        
+    
+def minPour(m, n , d):
+    if m>n:
+        t = m
+        m = n
+        n = t
+    if (d%(gcd(n, m)) != 0):
+        return -1
+    return min(pourSteps(n, m, d), pourSteps(m, n, d))
+
+n = int(input("Enter n value: "))
+m = int(input("Enter m value : "))
+d = int(input("Enter value to be filled: "))
+
+print(minPour(n,m,d))
+
+########################
+#8 puzzle - a*
+
+import numpy as np
+import math
+import time
+
+
+#start = np.array([1,2,3,5,6,0,7,8,4]).reshape(3,3)
+start = np.array([1,2,3,0,4,6,7,5,8]).reshape(3,3)
+
+goal = np.array([1,2,3,4,5,6,7,8,0]).reshape(3,3)
+
+
+def actions_array(array):
+	goal = np.array([1,2,3,4,5,6,7,8,0]).reshape(3,3)
+	possible_actions = []
+	new_arrays = {}
+	for i in range(len(array)):
+		for j in range(len(array)):
+			if array[i][j] == 0:
+
+				#for moving up
+				if i > 0:
+					up_array = array.copy()
+					up_array[i][j], up_array[i-1][j] = up_array[i-1][j], up_array[i][j]
+					if not np.array_equal(up_array, start):
+						new_arrays["up"] = up_array 
+
+
+				#for moving down
+				if i < len(array) - 1:
+					down_array = array.copy()
+					down_array[i][j], down_array[i+1][j] = down_array[i+1][j], down_array[i][j]
+					if not np.array_equal(down_array, start):
+						new_arrays["down"] = down_array
+
+
+				#for moving right
+				if j < len(array) - 1:
+					right_array = array.copy()
+					right_array[i][j], right_array[i][j+1] = right_array[i][j+1], right_array[i][j]
+					if not np.array_equal(right_array, start):
+						new_arrays["right"] = right_array
+
+
+				#for moving left
+				if j > 0 :
+					left_array = array.copy()
+					left_array[i][j], left_array[i][j-1] = left_array[i][j-1], left_array[i][j]
+					if not np.array_equal(left_array, start):
+						new_arrays["left"] = left_array
+
+
+	return new_arrays
+
+
+
+#H value by calculating number of misplaced tiles
+def h_value(array):
+	
+	s = sum(abs((val-1)%3 - i%3) + abs((val-1)//3 - i//3)
+        for i, val in enumerate(array.reshape(1,9)[0]) if val)
+
+	return s
+
+
+def main():
+	run = True
+	prev_step = []
+	array = start.copy()
+	ola = None
+	count = 0
+
+	tic = time.time()
+	while run:
+		
+		h={}
+		
+		if ola is not None:
+			array = ola
+
+
+		act = actions_array(array)
+
+		for keys, values in act.items():
+			h[keys]=h_value(values)
+			
+
+		#find the smallest h value and its key in the dict
+		new_dic =  dict(sorted(h.items(), key=lambda item: item[1]))
+		res = list(new_dic.items())[0]
+		r, v = res[0], res[1]
+
+		if not prev_step:
+			prev_step.append(['start_array', array])
+
+		else:
+			for i in range(len(prev_step)):
+					if np.array_equal(act[r], prev_step[i][1]):
+					#check if the 2nd value in dic is = to the lowest or not
+					#we are taking only the top two smallest 
+						new_h = list(new_dic.items())[1]
+						r, v = new_h[0], new_h[1]
+
+
+		if np.array_equal(act[r], goal):
+			print("\nsuccess")
+
+			prev_step.append([res[0], act[r]])
+			for i in prev_step:
+				print(i[0])
+				print(i[1])
+				print("\n")
+			run = False
+			toc = time.time()
+			print("Total number of steps: " + str(count))
+			print("Total amount of time in search: " + str(toc - tic) + " second(s)")
+
+		else:
+			prev_step.append([r, act[r]])
+			ola = act[r]
+			# prev_step[res[0]] = act[res[0]]
+			count+=1
+            
+main()
+
+
+
+##############################
+# PS2 
+#ps 1
+
+#q1 - (i) dfs
+
+from collections import deque
+import networkx as nx
+import matplotlib.pyplot as plt
+
+'''
+class Graph:
+    
+    def __init__(self, num_of_nodes, directed=True):
+        self.m_num_of_nodes = num_of_nodes
+        self.m_nodes = range(self.m_num_of_nodes)
+		
+        # Directed or Undirected
+        self.m_directed = directed
+		
+        # Graph representation - Adjacency list
+        self.m_adj_list = {node: set() for node in self.m_nodes}      
+	
+    def add_edge(self, node1, node2, weight=1):
+        self.m_adj_list[node1].add((node2, weight))
+
+        if not self.m_directed:
+            self.m_adj_list[node2].add((node1, weight))
+    
+    def print_adj_list(self):
+        for key in self.m_adj_list.keys():
+            print("node", key, ": ", self.m_adj_list[key])
+            
+            
+    def dfs(self, start, target, path = [], visited = set()):
+        path.append(start)
+        visited.add(start)
+        if start == target:
+            return path
+        for (neighbour, weight) in self.m_adj_list[start]:
+            if neighbour not in visited:
+                result = self.dfs(neighbour, target, path, visited)
+                if result is not None:
+                    return result
+        path.pop()
+        return None    
+
+graph = Graph(5, directed=False)
+graph.add_edge(0, 1)
+graph.add_edge(0, 2)
+graph.add_edge(1, 3)
+graph.add_edge(2, 3)
+graph.add_edge(3, 4)
+
+graph.print_adj_list()
+
+traversal = []
+traversal= graph.dfs(1,2)
+print(traversal)
+
+
+visited_edges=[]
+for i in range(len(traversal)-1):
+    visited_edges.append((traversal[i],traversal[i+1]))
+    
+graph = {
+  0 : [1,2],
+  1 : [0,3],
+  2 : [0,3],
+  3 : [1,2,4],
+  4 : [3]
+}
+
+print(traversal)
+print(visited_edges)
+
+g = nx.Graph(graph)
+pos = nx.spring_layout(g)
+nx.draw(g, pos, with_labels=True, node_color='brown', node_size=1500, font_weight='bold', font_color='black')
+nx.draw_networkx_edges(g, pos, edgelist=visited_edges, edge_color='r', width=2)  # Highlight the visited edges
+
+'''
+
+#(ii) bfs
+'''
+def bfs(graph, start, end):
+    visited = set()
+    queue = deque([(start, [start])])
+    while queue:
+        (node, path) = queue.popleft()
+        if node not in visited:
+            visited.add(node)
+            if node == end:
+                return path
+            for neighbor in graph[node]:
+                queue.append((neighbor, path + [neighbor]))
+    return queue
+
+graph = {
+    '1': set(['2', '3']),
+    '2': set(['1', '4', '5']),
+    '3': set(['1', '6']),
+    '4': set(['2']),
+    '5': set(['2', '6']),
+    '6': set(['3', '5'])
+}
+
+a = input("Enter starting node:")
+b = input("Enter ending node:")
+
+path = bfs(graph, a, b)
+visited_edges=[]
+for i in range(len(path)-1):
+    visited_edges.append((path[i],path[i+1]))
+
+if path is not None:
+    print("Shortest path from", a, "to",b, ":", path)
+else:
+    print("No path found from", a, "to",b)
+
+
+g = nx.Graph(graph)
+pos = nx.spring_layout(g)
+nx.draw(g, pos, with_labels=True, node_color='lightblue', node_size=1500, font_weight='bold', font_color='black')
+nx.draw_networkx_edges(g, pos, edgelist=visited_edges, edge_color='b', width=2) 
+plt.show()
+'''
+
+#(iii) dls
+'''
+from collections import defaultdict
+import networkx as nx
+
+path=[]
+
+class Graph:
+
+    def __init__(self,vertices):
+    
+        self.V = vertices
+        self.graph = defaultdict(list)
+
+
+    def addEdge(self,u,v):
+        self.graph[u].append(v)
+    
+    def DLS(self,src,target,maxDepth):
+    
+        if src == target : return True
+        if maxDepth <= 0 : return False
+    
+        for i in self.graph[src]:
+            if(self.DLS(i,target,maxDepth-1)):
+                print(i)
+                path.append(i)
+            return True
+        return False
+
+
+g = Graph (7);
+g.addEdge(0, 1)
+g.addEdge(0, 2)
+g.addEdge(1, 0)
+g.addEdge(1, 3)
+g.addEdge(1, 4)
+g.addEdge(2, 0)
+g.addEdge(2, 5)
+g.addEdge(2, 6)
+g.addEdge(3, 1)
+g.addEdge(4, 1)
+g.addEdge(5, 2)
+g.addEdge(6, 2)
+
+target = 6; maxDepth = 4; src = 4
+
+if g.DLS(src, target, maxDepth) == True:
+    path.append(src)
+    path=path[::-1]
+    print ("Target is reachable from source within limit")
+else :
+    print ("Target is NOT reachable from source within limit")
+
+visited_edges=[]
+for i in range(len(path)-1):
+    visited_edges.append((path[i],path[i+1]))
+   
+graph = {
+  0 : [1,2],
+  1 : [0,3,4],
+  2 : [0,5,6],
+  3 : [1],
+  4 : [1],
+  5 : [2],
+  6 : [2]  }
+
+
+print(visited_edges)
+
+g = nx.Graph(graph)
+pos = nx.spring_layout(g)
+nx.draw(g, pos, with_labels=True, node_color='lightblue', node_size=1500, font_weight='bold', font_color='black')
+nx.draw_networkx_edges(g, pos, edgelist=visited_edges, edge_color='r', width=2)  # Highlight the visited edges
+'''
+
+#(iv) Iterative Deepening Search
+'''
+graph = nx.Graph()
+ 
+graph.add_edge(1, 2)
+graph.add_edge(2, 3)
+graph.add_edge(3, 4)
+graph.add_edge(1, 4)
+graph.add_edge(1, 5)
+graph.add_edge(5, 6)
+graph.add_edge(5, 7)
+graph.add_edge(4, 8)
+graph.add_edge(3, 8)
+ 
+
+visited = []
+
+def dls(startNode, endNode, depth):
+    if startNode == endNode:
+      return True
+    if depth <= 0:
+      return False
+    
+    for neighbour in graph[startNode]:
+      if dls(neighbour, endNode, depth-1):
+        visited.append(neighbour)
+        return True
+    return False
+
+def ids(startNode, endNode, depth):
+  for i in range(depth):
+    if (dls(startNode, endNode, i)):
+      return True
+  return False
+
+start = int(input("Enter the start node : "))
+end = int(input("Enter the end node : "))
+depth = int(input("Enter limit for depth : "))
+print("Iterative Deepening Search")
+if ids(start, end, depth):
+  visited.append(start)
+  visited = visited[::-1]
+  print(visited)
+  print ("Target is reachable from source within limit")
+else:
+  print ("Target is not reachable from source within limit")
+
+visited_edges = []
+for i in range(len(visited)-1):
+    visited_edges.append((visited[i], visited[i+1]))
+
+g = nx.Graph(graph)
+pos = nx.spring_layout(g)
+nx.draw(g, pos, with_labels=True, node_color='lightblue', node_size=1500, font_weight='bold', font_color='black')
+nx.draw_networkx_edges(g, pos, edgelist=visited_edges, edge_color='r', width=2)
+'''
+
+# (3) 8 puzzle problem
+'''
+#using bfs
+
+initialState=[1, 2, 3, 8, 0, 4, 7, 6, 5]
+goalState=[2, 8, 1, 0, 4, 3, 7, 6, 5]
+
+def bfs(start, end):
+    visited = []
+    count=0
+    queue = deque([(start, [start])])
+    while queue:
+        #print(queue)
+        (node, path) = queue.popleft()
+        if node not in visited:
+            #print(node)
+            count+=1
+            visited.append(node)
+            if node == end:
+                return path
+            #move 0 to left
+            ind=node.index(0)
+            if (ind>0 and ind not in [3, 6]):
+                neighbor=node.copy()
+                neighbor[ind]=node[ind-1]
+                neighbor[ind-1]=0
+                queue.append((neighbor, path + [neighbor]))
+            #move 0 to right
+            if (ind<8 and ind not in [2, 5]):
+                neighbor=node.copy()
+                neighbor[ind]=node[ind+1]
+                neighbor[ind+1]=0
+                queue.append((neighbor, path + [neighbor]))
+            #move 0 up
+            if ind >2:
+                neighbor=node.copy()
+                neighbor[ind]=node[ind-3]
+                neighbor[ind-3]=0
+                queue.append((neighbor, path + [neighbor]))
+            #move 0 down
+            if ind<6:
+                neighbor=node.copy()
+                neighbor[ind]=node[ind+3]
+                neighbor[ind+3]=0
+                queue.append((neighbor, path + [neighbor]))
+    return queue
+
+path=bfs(initialState, goalState)
+for i in path:
+    print (i)
+'''
+
+#using hill climbing algorithm
+
+goal = [1, 2, 3, 8, 0, 4, 7, 6, 5]
+start = [2, 8, 3, 1, 6, 4, 7, 0, 5]
+n1 = []
+def calcHeuristic(state):
+    h = 0
+    for i in range(0, len(state)):
+        if state[i] != goal[i] and state[i]!=0 :
+            h += 1
+    return h
+
+print(calcHeuristic(start))
+
+n = start.copy()
+while True:
+    ind = n.index(0)
+    v = 0
+    #move up
+    if ind not in [0, 1, 2]:
+        temp = n[ind-3]
+        n[ind-3] = n[ind]
+        n[ind] = temp
+        v = calcHeuristic(n)
+
+##########################
+#two jugs w a and b with capacity c how many steps
+def measure_water(a, b, target):
+    # Initial state: both jugs are empty
+    jug_a = 0
+    jug_b = 0
+
+    steps = 0
+
+    while jug_a != target and jug_b != target:
+        if jug_a == 0:
+            # Step: Fill jug_a
+            jug_a = a
+        elif jug_b == b:
+            # Step: Empty jug_b
+            jug_b = 0
+        else:
+            # Step: Pour from jug_a to jug_b
+            transfer_amount = min(jug_a, b - jug_b)
+            jug_a -= transfer_amount
+            jug_b += transfer_amount
+
+        steps += 1
+
+    return steps
+
+# Example: To have 2 liters in jug_a (with capacities 4 and 3)
+result = measure_water(3, 4, 2)
+print("Minimum steps required:", result)
+
+###########
+Island problem : dis
+# Program to count islands in boolean 2D matrix
+class Graph:
+
+	def __init__(self, row, col, g):
+		self.ROW = row
+		self.COL = col
+		self.graph = g
+
+	# A function to check if a given cell
+	# (row, col) can be included in DFS
+	def isSafe(self, i, j, visited):
+		# row number is in range, column number
+		# is in range and value is 1
+		# and not yet visited
+		return (i >= 0 and i < self.ROW and
+				j >= 0 and j < self.COL and
+				not visited[i][j] and self.graph[i][j])
+
+	# A utility function to do DFS for a 2D
+	# boolean matrix. It only considers
+	# the 8 neighbours as adjacent vertices
+
+	def DFS(self, i, j, visited):
+
+		# These arrays are used to get row and
+		# column numbers of 8 neighbours
+		# of a given cell
+		rowNbr = [-1, -1, -1, 0, 0, 1, 1, 1]
+		colNbr = [-1, 0, 1, -1, 1, -1, 0, 1]
+
+		# Mark this cell as visited
+		visited[i][j] = True
+
+		# Recur for all connected neighbours
+		for k in range(8):
+			if self.isSafe(i + rowNbr[k], j + colNbr[k], visited):
+				self.DFS(i + rowNbr[k], j + colNbr[k], visited)
+
+	# The main function that returns
+	# count of islands in a given boolean
+	# 2D matrix
+
+	def countIslands(self):
+		# Make a bool array to mark visited cells.
+		# Initially all cells are unvisited
+		visited = [[False for j in range(self.COL)]for i in range(self.ROW)]
+
+		# Initialize count as 0 and traverse
+		# through the all cells of
+		# given matrix
+		count = 0
+		for i in range(self.ROW):
+			for j in range(self.COL):
+				# If a cell with value 1 is not visited yet,
+				# then new island found
+				if visited[i][j] == False and self.graph[i][j] == 1:
+					# Visit all cells in this island
+					# and increment island count
+					self.DFS(i, j, visited)
+					count += 1
+
+		return count
+
+
+graph = [[1, 1, 0, 0, 0],
+		[0, 1, 0, 0, 1],
+		[1, 0, 0, 1, 1],
+		[0, 0, 0, 0, 0],
+		[1, 0, 1, 0, 1]]
+
+
+row = len(graph)
+col = len(graph[0])
+
+g = Graph(row, col, graph)
+
+print("Number of islands is:")
+print(g.countIslands())
+
+# This code is contributed by Neelam Yadav
+
+
+
+
