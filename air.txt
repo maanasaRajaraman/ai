@@ -1,0 +1,1049 @@
+# DFS algorithm in Python
+
+
+# DFS algorithm
+def dfs(graph, start, visited=None):
+    if visited is None:
+        visited = set()
+    visited.add(start)
+
+    print(start)
+
+    for next in graph[start] - visited:
+        dfs(graph, next, visited)
+    return visited
+
+
+graph = {'0': set(['1', '2']),
+         '1': set(['0', '3', '4']),
+         '2': set(['0']),
+         '3': set(['1']),
+         '4': set(['2', '3'])}
+
+dfs(graph, '0')
+----------------------------------------------------
+# BFS algorithm in Python
+
+
+import collections
+
+# BFS algorithm
+def bfs(graph, root):
+
+    visited, queue = set(), collections.deque([root])
+    visited.add(root)
+
+    while queue:
+
+        # Dequeue a vertex from queue
+        vertex = queue.popleft()
+        print(str(vertex) + " ", end="")
+
+        # If not visited, mark it as visited, and
+        # enqueue it
+        for neighbour in graph[vertex]:
+            if neighbour not in visited:
+                visited.add(neighbour)
+                queue.append(neighbour)
+
+
+if __name__ == '__main__':
+    graph = {0: [1, 2], 1: [2], 2: [3], 3: [1, 2]}
+    print("Following is Breadth First Traversal: ")
+    bfs(graph, 0)
+
+----------------------------------------------------
+
+Missionaries and cannibals:
+
+
+from collections import deque
+
+def isPossible(current, cannibals, missionaries):
+    if cannibals + missionaries > 2 or cannibals + missionaries == 0:
+        return False
+
+    if current[-1] == 1:
+        if current[0] - cannibals < 0 or current[1] - missionaries < 0:
+            return False
+        else:
+            return True
+    else:
+        if current[2] - cannibals < 0 or current[3] - missionaries < 0:
+            return False
+        else:
+            return True
+
+
+def successors(current):
+    result = []
+    for cannibals in range(3):
+        for missionaries in range(3):
+            if isPossible(current, cannibals, missionaries):
+                new = current[:]
+                if new[-1] == 1:
+                    new[0] -= cannibals
+                    new[1] -= missionaries
+                    new[2] += cannibals
+                    new[3] += missionaries
+                    new[4] = 0
+                else:
+                    new[0] += cannibals
+                    new[1] += missionaries
+                    new[2] -= cannibals
+                    new[3] -= missionaries
+                    new[4] = 1
+                result.append(new)
+    return result
+
+
+def isValid(current):
+    if current[0] > current[1] and current[1] != 0:
+        return False
+    elif current[2] > current[3] and current[3] != 0:
+        return False
+    return True
+
+
+def bfs(start, goal):
+    queue = deque([(start, [])])
+    visited = set()
+    while queue:
+        state, path = queue.popleft()
+        if state == goal:
+            return path + [state]
+        visited.add(tuple(state))
+        for succ in successors(state):
+            if tuple(succ) not in visited and isValid(succ):
+                queue.append((succ, path + [state]))
+    return None
+
+
+if __name__ == "__main__":
+    start = [3, 3, 0, 0, 1]
+    goal = [0, 0, 3, 3, 0]
+    path = bfs(start, goal)
+    if path is not None:
+        print("Success!")
+        for i, state in enumerate(path):
+            print("Step {}: Left Bank: {}C, {}M, Right Bank: {}C, {}M".format(i+1, state[0], state[1], state[2], state[3]))
+    else:
+        print("Failed!")
+
+----------------------------------------------------------------
+#terrain map
+
+from queue import Queue
+from math import sqrt, floor
+
+with open('./input.txt', 'r') as f:
+    lines = f.readlines()
+output_file = open('./output.txt', 'w')
+
+method = lines[0].split()[0]
+w, h = [int(x) for x in lines[1].split()]
+start_x, start_y = [int(x) for x in lines[2].split()]
+height_diff = int(lines[3].split()[0])
+n = int(lines[4].split()[0])
+
+target = []
+for line in lines[5:5+n]:
+    x, y = [int(x) for x in line.split()]
+    target.append((x, y))
+
+land = []
+for line in lines[5+n:]:
+    land.append([int(x) for x in line.split()])
+
+
+class Node:
+    def __init__(self, x, y, parent, path_cost, estimate=0):
+        self.x = x
+        self.y = y
+        self.parent = parent
+        self.path_cost = path_cost
+
+        self.estimate = estimate
+        self.desirability = path_cost+estimate
+
+
+def output(node):
+    path = []
+    path.append((node.x, node.y))
+
+    while(node.parent != None):
+        node = node.parent
+        path.append((node.x, node.y))
+
+    for x, y in path[::-1]:
+        output_file.write(str(x)+','+str(y)+' ')
+
+    output_file.seek(output_file.tell()-1, 0)
+    output_file.truncate()
+    output_file.write('\n')
+
+    print()
+
+
+def BFS(target_x, target_y):
+    start = Node(start_x, start_y, None, 0)
+    q = Queue(-1)
+    q.put(start)
+    explored = set()
+
+    while(not q.empty()):
+        current = q.get()
+        if (current.x, current.y) in explored:
+            continue
+        explored.add((current.x, current.y))
+
+        current_height = abs(land[current.y][current.x]
+                             ) if land[current.y][current.x] < 0 else 0
+        next_locs = [(current.x-1, current.y-1), (current.x, current.y-1), (current.x+1, current.y-1),
+                     (current.x-1, current.y), (current.x+1, current.y),
+                     (current.x-1, current.y+1), (current.x, current.y+1), (current.x+1, current.y+1)]
+
+        for (next_x, next_y) in next_locs:
+            if (next_x < 0 or next_x > w-1) or (next_y < 0 or next_y > h-1):
+                continue
+
+            # check if it's explored
+            if (next_x, next_y) in explored:
+                continue
+
+            next_height = abs(land[next_y][next_x]
+                              ) if land[next_y][next_x] < 0 else 0
+            next_cost = 1
+
+            if abs(current_height-next_height) > height_diff:
+                continue
+
+            next_node = Node(next_x, next_y, current,
+                             current.path_cost+next_cost)
+
+            if next_x == target_x and next_y == target_y:
+                output(next_node)
+                return True
+
+            q.put(next_node)
+
+    # return failure
+    return False
+
+
+def UCS(target_x, target_y):
+    start = Node(start_x, start_y, None, 0)
+    l = []
+    l.append(start)
+    closed_set = {}
+
+    while(len(l)):
+        current = min(l, key=lambda x: x.path_cost)
+        l.remove(current)
+        closed_set[(current.x, current.y)] = current
+
+        if current.x == target_x and current.y == target_y:
+            output(current)
+            return True
+
+        current_height = abs(land[current.y][current.x]
+                             ) if land[current.y][current.x] < 0 else 0
+        next_locs = [(current.x-1, current.y-1), (current.x, current.y-1), (current.x+1, current.y-1),
+                     (current.x-1, current.y), (current.x+1, current.y),
+                     (current.x-1, current.y+1), (current.x, current.y+1), (current.x+1, current.y+1)]
+
+        for (next_x, next_y) in next_locs:
+            if (next_x < 0 or next_x > w-1) or (next_y < 0 or next_y > h-1):
+                continue
+
+            next_height = abs(land[next_y][next_x]
+                              ) if land[next_y][next_x] < 0 else 0
+            if abs(current_height-next_height) > height_diff:
+                continue
+
+            next_cost = 14 if next_x != current.x and next_y != current.y else 10
+
+            next_node = Node(next_x, next_y, current,
+                             current.path_cost+next_cost)
+
+            # if no node in open or closed has such state
+            open_set = set([(node.x, node.y) for node in l])
+
+            if (next_x, next_y) not in open_set and (next_x, next_y) not in closed_set:
+                l.append(next_node)
+            elif (next_x, next_y) in open_set:
+                for i, node in enumerate(l):
+                    if node.x == next_x and node.y == next_y and next_node.path_cost < node.path_cost:
+                        del(l[i])
+                        l.append(next_node)
+            elif (next_x, next_y) in closed_set:
+                node = closed_set[(next_x, next_y)]
+                if next_node.path_cost < node.path_cost:
+                    del(closed_set[(next_x, next_y)])
+                    l.append(next_node)
+
+    # return failure
+    return False
+
+
+def Astar(target_x, target_y):
+    def h_func(start_x, start_y):
+        return floor(10*sqrt((start_x-target_x)**2+(start_y-target_y)**2))
+
+    start = Node(start_x, start_y, None, 0, h_func(start_x, start_y))
+    l = []
+    l.append(start)
+    closed_set = {}
+
+    while(len(l)):
+        current = min(l, key=lambda x: x.desirability)
+        l.remove(current)
+        closed_set[(current.x, current.y)] = current
+
+        if current.x == target_x and current.y == target_y:
+            output(current)
+            return True
+
+        current_height = abs(land[current.y][current.x]
+                             ) if land[current.y][current.x] < 0 else 0
+        next_locs = [(current.x-1, current.y-1), (current.x, current.y-1), (current.x+1, current.y-1),
+                     (current.x-1, current.y), (current.x+1, current.y),
+                     (current.x-1, current.y+1), (current.x, current.y+1), (current.x+1, current.y+1)]
+
+        for (next_x, next_y) in next_locs:
+            if (next_x < 0 or next_x > w-1) or (next_y < 0 or next_y > h-1):
+                continue
+
+            next_height = abs(land[next_y][next_x]
+                              ) if land[next_y][next_x] < 0 else 0
+            if abs(current_height-next_height) > height_diff:
+                continue
+
+            move_cost = 14 if next_x != current.x and next_y != current.y else 10
+            height_cost = abs(current_height-next_height)
+            mud_level = land[next_y][next_x] if next_height == 0 else 0
+
+            next_cost = move_cost+height_cost+mud_level
+
+            next_node = Node(next_x, next_y, current,
+                             current.path_cost+next_cost, h_func(next_x, next_y))
+
+            # if no node in open or closed has such state
+            open_set = set([(node.x, node.y) for node in l])
+
+            if (next_x, next_y) not in open_set and (next_x, next_y) not in closed_set:
+                l.append(next_node)
+            elif (next_x, next_y) in open_set:
+                for i, node in enumerate(l):
+                    if node.x == next_x and node.y == next_y and next_node.desirability < node.desirability:
+                        del(l[i])
+                        l.append(next_node)
+            elif (next_x, next_y) in closed_set:
+                node = closed_set[(next_x, next_y)]
+                if next_node.desirability < node.desirability:
+                    del(closed_set[(next_x, next_y)])
+                    l.append(next_node)
+
+    # return failure
+    return False
+
+
+if method == 'BFS':
+    func = BFS
+elif method == 'UCS':
+    func = UCS
+elif method == 'A*':
+    func = Astar
+
+for x, y in target:
+    if not func(x, y):
+        output_file.write('FAIL\n')
+
+output_file.close()
+
+#Input file
+'''
+BFS
+2 2
+0 0
+5
+1
+1 1
+0   -10
+-10 -20
+'''
+
+-------------------------------------------------------------------------------
+#degree
+
+
+#degree.py
+import csv
+import sys
+
+from util import Node, StackFrontier, QueueFrontier
+
+# Maps names to a set of corresponding person_ids
+# {"name": "id"}
+names = {}
+
+# Maps person_ids to a dictionary of: name, birth, movies (a set of movie_ids)
+# '1': {'name': 'Fred Astaire', 'birth': '1899', 'movies': {'74130', '72272', '75323', '76851', '87322', '82449'}},
+people = {}
+
+# Maps movie_ids to a dictionary of: title, year, stars (a set of person_ids)
+# {'15724': {'title': 'Dama de noche', 'year': '1993', 'stars': {'650495', '844752', '869732', '194720'}},
+movies = {}
+
+def load_data(directory):
+    """
+    Load data from CSV files into memory.
+    """
+    # Load people
+    with open(f"{directory}/people.csv", encoding="utf-8") as f:
+        reader = csv.DictReader(f)
+        for row in reader:
+            people[row["id"]] = {
+                "name": row["name"],
+                "birth": row["birth"],
+                "movies": set()
+            }
+            if row["name"].lower() not in names:
+                names[row["name"].lower()] = {row["id"]}
+            else:
+                names[row["name"].lower()].add(row["id"])
+
+    # Load movies
+    with open(f"{directory}/movies.csv", encoding="utf-8") as f:
+        reader = csv.DictReader(f)
+        for row in reader:
+            movies[row["id"]] = {
+                "title": row["title"],
+                "year": row["year"],
+                "stars": set()
+            }
+
+    # Load stars
+    with open(f"{directory}/stars.csv", encoding="utf-8") as f:
+        reader = csv.DictReader(f)
+        for row in reader:
+            try:
+                people[row["person_id"]]["movies"].add(row["movie_id"])
+                movies[row["movie_id"]]["stars"].add(row["person_id"])
+            except KeyError:
+                pass
+
+
+def main():
+    if len(sys.argv) > 2:
+        sys.exit("Usage: python degrees.py [directory]")
+    directory = sys.argv[1] if len(sys.argv) == 2 else "large"
+
+    # Load data from files into memory
+    print("Loading data...")
+    load_data("large")
+    print("Data loaded.")
+
+    source = person_id_for_name(input("Name: "))
+    if source is None:
+        sys.exit("Person not found.")
+    target = person_id_for_name(input("Name: "))
+    if target is None:
+        sys.exit("Person not found.")
+
+    path = shortest_path(source, target)
+
+    if path is None:
+        print("Not connected.")
+    else:
+        degrees = len(path)
+        print(f"{degrees} degrees of separation.")
+        path = [(None, source)] + path
+        for i in range(degrees):
+            person1 = people[path[i][1]]["name"]
+            person2 = people[path[i + 1][1]]["name"]
+            movie = movies[path[i + 1][0]]["title"]
+            print(f"{i + 1}: {person1} and {person2} starred in {movie}")
+
+
+def shortest_path(source, target):
+    """
+    Returns the shortest list of (movie_id, person_id) pairs
+    that connect the source to the target.
+    """
+    frontier = QueueFrontier()
+    explored_states = set()
+    
+    start_node = Node(source, None, people[source])
+    frontier.add(start_node)
+    num_explored = 0
+
+    while True:
+        if frontier.empty():
+            return None
+            
+        node = frontier.remove()
+
+        if node.state == target:
+            short_path = []
+            while node.parent is not None:
+                short_path.append((node.action, node.state))
+                node = node.parent
+            
+            short_path.reverse()
+            return short_path
+
+        num_explored += 1
+        explored_states.add(node.state)
+ 
+        for action, state in sorted(neighbors_for_person(node.state)):
+            if state not in explored_states and not frontier.contains_state(state) and state != node.state:
+                child = Node(state, node, action)
+                frontier.add(child)
+                
+                if child.state == target:
+                    break
+
+
+def person_id_for_name(name):
+    """
+    Returns the IMDB id for a person's name,
+    resolving ambiguities as needed.
+    """
+    person_ids = list(names.get(name.lower(), set()))
+    if len(person_ids) == 0:
+        return None
+    elif len(person_ids) > 1:
+        print(f"Which '{name}'?")
+        for person_id in person_ids:
+            person = people[person_id]
+            name = person["name"]
+            birth = person["birth"]
+            print(f"ID: {person_id}, Name: {name}, Birth: {birth}")
+        try:
+            person_id = input("Intended Person ID: ")
+            if person_id in person_ids:
+                return person_id
+        except ValueError:
+            pass
+        return None
+    else:
+        return person_ids[0]
+
+
+def neighbors_for_person(person_id):
+    """
+    Returns (movie_id, person_id) pairs for people
+    who starred with a given person.
+    """
+    movie_ids = people[person_id]["movies"]
+    neighbors = set()
+    for movie_id in movie_ids:
+        for person_id in movies[movie_id]["stars"]:
+            neighbors.add((movie_id, person_id))
+    return neighbors
+
+
+if __name__ == "__main__":
+    main()
+    
+    
+#util.py
+class Node():
+    def __init__(self, state, parent, action):
+        self.state = state
+        self.parent = parent
+        self.action = action
+
+
+class StackFrontier():
+    def __init__(self):
+        self.frontier = []
+
+    def add(self, node):
+        self.frontier.append(node)
+
+    def contains_state(self, state):
+        return any(node.state == state for node in self.frontier)
+
+    def empty(self):
+        return len(self.frontier) == 0
+
+    def remove(self):
+        if self.empty():
+            raise Exception("empty frontier")
+        else:
+            node = self.frontier[-1]
+            self.frontier = self.frontier[:-1]
+            return node
+
+
+class QueueFrontier(StackFrontier):
+
+    def remove(self):
+        if self.empty():
+            raise Exception("empty frontier")
+        else:
+            node = self.frontier[0]
+            self.frontier = self.frontier[1:]
+            return node
+----------------------------------------------------------
+#bridge and torch (give whitespaced separated i/p)
+
+count = 0
+
+
+def two_left_case(a_side, b_side):
+    move_from_a_to_b(a_side[0], a_side[1], a_side, b_side)
+
+
+def three_left_case(a_side, b_side):
+    move_from_a_to_b(max(a_side), min(a_side), a_side, b_side)
+    move_from_b_to_a(min(b_side), a_side, b_side)
+    print("Move %s back to A side" % str(min(b_side)))
+
+
+def four_or_more_case(a_side, b_side):
+    move_from_a_to_b(min(a_side), sorted(a_side)[1], a_side, b_side)
+    move_from_b_to_a(min(b_side), a_side, b_side)
+    move_from_a_to_b(max(a_side), sorted(a_side)[-2], a_side, b_side)
+    move_from_b_to_a(min(b_side), a_side, b_side)
+
+
+def move_from_a_to_b(first_number, second_number, a_side, b_side):
+    global count
+    a_side.remove(first_number)
+    a_side.remove(second_number)
+    b_side.append(first_number)
+    b_side.append(second_number)
+    count += max(first_number, second_number)
+    print("Move %s & %s to B side." % (str(first_number), str(second_number)))
+
+
+def move_from_b_to_a(number, a_side, b_side):
+    global count
+    b_side.remove(number)
+    a_side.append(number)
+    count += number
+    print("Move %s back to A side." % str(number))
+
+
+if __name__ == '__main__':
+    a_side = [int(x) for x in input("Enter time of each person: ").split()]
+    b_side = []
+    while len(a_side) != 0:
+        if len(a_side) == 1:
+            print("Just bring that number to B...")
+        if len(a_side) == 2:
+            two_left_case(a_side, b_side)
+            print("Total step: %s" % str(count))
+            break
+        elif len(a_side) == 3:
+            three_left_case(a_side, b_side)
+        else:
+            four_or_more_case(a_side, b_side)
+
+
+-------------------------------------------------------------------------------------
+#water jug 3 jugs
+capacity = (12,8,5) 
+x = capacity[0]
+y = capacity[1]
+z = capacity[2]
+
+# to mark visited states
+memory = {}
+
+# store solution path
+ans = []
+
+def get_all_states(state):
+	# Let the 3 jugs be called a,b,c
+	a = state[0]
+	b = state[1]
+	c = state[2]
+
+	if(a==6 and b==6):
+		ans.append(state)
+		return True
+
+	# if current state is already visited earlier
+	if((a,b,c) in memory):
+		return False
+
+	memory[(a,b,c)] = 1
+
+	#empty jug a
+	if(a>0):
+		#empty a into b
+		if(a+b<=y):
+			if( get_all_states((0,a+b,c)) ):
+				ans.append(state)
+				return True
+		else:
+			if( get_all_states((a-(y-b), y, c)) ):
+				ans.append(state)
+				return True
+		#empty a into c
+		if(a+c<=z):
+			if( get_all_states((0,b,a+c)) ):
+				ans.append(state)
+				return True
+		else:
+			if( get_all_states((a-(z-c), b, z)) ):
+				ans.append(state)
+				return True
+
+	#empty jug b
+	if(b>0):
+		#empty b into a
+		if(a+b<=x):
+			if( get_all_states((a+b, 0, c)) ):
+				ans.append(state)
+				return True
+		else:
+			if( get_all_states((x, b-(x-a), c)) ):
+				ans.append(state)
+				return True
+		#empty b into c
+		if(b+c<=z):
+			if( get_all_states((a, 0, b+c)) ):
+				ans.append(state)
+				return True
+		else:
+			if( get_all_states((a, b-(z-c), z)) ):
+				ans.append(state)
+				return True
+
+	#empty jug c
+	if(c>0):
+		#empty c into a
+		if(a+c<=x):
+			if( get_all_states((a+c, b, 0)) ):
+				ans.append(state)
+				return True
+		else:
+			if( get_all_states((x, b, c-(x-a))) ):
+				ans.append(state)
+				return True
+		#empty c into b
+		if(b+c<=y):
+			if( get_all_states((a, b+c, 0)) ):
+				ans.append(state)
+				return True
+		else:
+			if( get_all_states((a, y, c-(y-b))) ):
+				ans.append(state)
+				return True
+
+	return False
+
+initial_state = (12,0,0)
+print("Starting work...\n")
+get_all_states(initial_state)
+ans.reverse()
+for i in ans:
+	print(i) 
+
+------------------------------------------------------------------------
+#water jug 2 jugs
+
+def gcd(a, b):
+    if b==0:
+        return a
+    return gcd(b, a%b)
+
+def pourSteps(to, fro ,d):
+    curr = fro
+    toJ = 0
+    step = 1 
+    
+    while(curr != d and toJ != d):
+        temp = min(curr, to-toJ)
+        toJ += temp
+        curr -= temp
+        step += 1 
+        
+        if curr==d or toJ==d:
+            break
+        
+        if curr==0:
+            curr = fro
+            step += 1
+        
+        if toJ == to:
+            toJ = 0
+            step += 1
+    return step        
+    
+def minPour(m, n , d):
+    if m>n:
+        t = m
+        m = n
+        n = t
+    if (d%(gcd(n, m)) != 0):
+        return -1
+    return min(pourSteps(n, m, d), pourSteps(m, n, d))
+
+n = int(input("Enter n value: "))
+m = int(input("Enter m value : "))
+d = int(input("Enter value to be filled: "))
+
+print(minPour(n,m,d))
+
+
+-------------------------------------------------------------
+
+
+# Program to count islands in boolean 2D matrix
+class Graph:
+
+	def __init__(self, row, col, g):
+		self.ROW = row
+		self.COL = col
+		self.graph = g
+
+	# A function to check if a given cell
+	# (row, col) can be included in DFS
+	def isSafe(self, i, j, visited):
+		# row number is in range, column number
+		# is in range and value is 1
+		# and not yet visited
+		return (i >= 0 and i < self.ROW and
+				j >= 0 and j < self.COL and
+				not visited[i][j] and self.graph[i][j])
+
+	# A utility function to do DFS for a 2D
+	# boolean matrix. It only considers
+	# the 8 neighbours as adjacent vertices
+
+	def DFS(self, i, j, visited):
+
+		# These arrays are used to get row and
+		# column numbers of 8 neighbours
+		# of a given cell
+		rowNbr = [-1, -1, -1, 0, 0, 1, 1, 1]
+		colNbr = [-1, 0, 1, -1, 1, -1, 0, 1]
+
+		# Mark this cell as visited
+		visited[i][j] = True
+
+		# Recur for all connected neighbours
+		for k in range(8):
+			if self.isSafe(i + rowNbr[k], j + colNbr[k], visited):
+				self.DFS(i + rowNbr[k], j + colNbr[k], visited)
+
+	# The main function that returns
+	# count of islands in a given boolean
+	# 2D matrix
+
+	def countIslands(self):
+		# Make a bool array to mark visited cells.
+		# Initially all cells are unvisited
+		visited = [[False for j in range(self.COL)]for i in range(self.ROW)]
+
+		# Initialize count as 0 and traverse
+		# through the all cells of
+		# given matrix
+		count = 0
+		for i in range(self.ROW):
+			for j in range(self.COL):
+				# If a cell with value 1 is not visited yet,
+				# then new island found
+				if visited[i][j] == False and self.graph[i][j] == 1:
+					# Visit all cells in this island
+					# and increment island count
+					self.DFS(i, j, visited)
+					count += 1
+
+		return count
+
+
+graph = [[1, 1, 0, 0, 0],
+		[0, 1, 0, 0, 1],
+		[1, 0, 0, 1, 1],
+		[0, 0, 0, 0, 0],
+		[1, 0, 1, 0, 1]]
+
+
+row = len(graph)
+col = len(graph[0])
+
+g = Graph(row, col, graph)
+
+print("Number of islands is:")
+print(g.countIslands())
+----------------------------------------------------------------------------------------
+#8 PUZZLE A star
+
+import numpy as np
+import math
+import time
+
+
+#start = np.array([1,2,3,5,6,0,7,8,4]).reshape(3,3)
+start = np.array([1,2,3,0,4,6,7,5,8]).reshape(3,3)
+
+goal = np.array([1,2,3,4,5,6,7,8,0]).reshape(3,3)
+
+
+def actions_array(array):
+	goal = np.array([1,2,3,4,5,6,7,8,0]).reshape(3,3)
+	possible_actions = []
+	new_arrays = {}
+	for i in range(len(array)):
+		for j in range(len(array)):
+			if array[i][j] == 0:
+
+				#for moving up
+				if i > 0:
+					up_array = array.copy()
+					up_array[i][j], up_array[i-1][j] = up_array[i-1][j], up_array[i][j]
+					if not np.array_equal(up_array, start):
+						new_arrays["up"] = up_array 
+
+
+				#for moving down
+				if i < len(array) - 1:
+					down_array = array.copy()
+					down_array[i][j], down_array[i+1][j] = down_array[i+1][j], down_array[i][j]
+					if not np.array_equal(down_array, start):
+						new_arrays["down"] = down_array
+
+
+				#for moving right
+				if j < len(array) - 1:
+					right_array = array.copy()
+					right_array[i][j], right_array[i][j+1] = right_array[i][j+1], right_array[i][j]
+					if not np.array_equal(right_array, start):
+						new_arrays["right"] = right_array
+
+
+				#for moving left
+				if j > 0 :
+					left_array = array.copy()
+					left_array[i][j], left_array[i][j-1] = left_array[i][j-1], left_array[i][j]
+					if not np.array_equal(left_array, start):
+						new_arrays["left"] = left_array
+
+
+	return new_arrays
+
+
+
+#H value by calculating number of misplaced tiles
+def h_value(array):
+	
+	s = sum(abs((val-1)%3 - i%3) + abs((val-1)//3 - i//3)
+        for i, val in enumerate(array.reshape(1,9)[0]) if val)
+
+	return s
+
+
+def main():
+	run = True
+	prev_step = []
+	array = start.copy()
+	ola = None
+	count = 0
+
+	tic = time.time()
+	while run:
+		
+		h={}
+		
+		if ola is not None:
+			array = ola
+
+
+		act = actions_array(array)
+
+		for keys, values in act.items():
+			h[keys]=h_value(values)
+			
+
+		#find the smallest h value and its key in the dict
+		new_dic =  dict(sorted(h.items(), key=lambda item: item[1]))
+		res = list(new_dic.items())[0]
+		r, v = res[0], res[1]
+
+		if not prev_step:
+			prev_step.append(['start_array', array])
+
+		else:
+			for i in range(len(prev_step)):
+					if np.array_equal(act[r], prev_step[i][1]):
+					#check if the 2nd value in dic is = to the lowest or not
+					#we are taking only the top two smallest 
+						new_h = list(new_dic.items())[1]
+						r, v = new_h[0], new_h[1]
+
+
+		if np.array_equal(act[r], goal):
+			print("\nsuccess")
+
+			prev_step.append([res[0], act[r]])
+			for i in prev_step:
+				print(i[0])
+				print(i[1])
+				print("\n")
+			run = False
+			toc = time.time()
+			print("Total number of steps: " + str(count))
+			print("Total amount of time in search: " + str(toc - tic) + " second(s)")
+
+		else:
+			prev_step.append([r, act[r]])
+			ola = act[r]
+			# prev_step[res[0]] = act[res[0]]
+			count+=1
+            
+main()
+
+-------------------------------------
+#toh dfs
+def hanoi_bfs(num_disks):
+    initial_state = ([list(range(num_disks, 0, -1)), [], []])
+    #initial_state = ([[2, 1, 3], [], []])
+    goal_state = ([[], [], list(range(num_disks, 0, -1))])
+
+    queue = []
+    queue.append((initial_state, []))  # (state, path)
+
+    visited = set()
+
+    while queue:
+        current_state, current_path = queue.pop(0)
+        if current_state == goal_state:
+            return current_path
+
+        if tuple(map(tuple, current_state)) in visited:
+            continue
+
+        visited.add(tuple(map(tuple, current_state)))
+
+        for i in range(3):
+            for j in range(3):
+                if i != j and current_state[i]:
+                    new_state = [current_state[x][:] for x in range(3)]
+                    disk = new_state[i].pop()
+                    new_state[j].append(disk)
+                    queue.append((new_state, current_path + [(i, j)]))
+
+    return None
+
+def print_solution(solution):
+    if solution:
+        print("Solution path:")
+        for move in solution:
+            print(f"Move disk from peg {move[0]} to peg {move[1]}")
+    else:
+        print("No solution found")
+
+if __name__ == "__main__":
+    num_disks_list = [3]
+
+    for num_disks in num_disks_list:
+        print(f"\nTower of Hanoi with {num_disks} disks:")
+        solution = hanoi_bfs(num_disks)
+        print_solution(solution)
