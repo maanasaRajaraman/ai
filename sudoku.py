@@ -1,4 +1,3 @@
-#bfs_sudoky.py
 
 from queue import Queue
 import copy
