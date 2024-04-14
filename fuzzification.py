@@ -1,4 +1,3 @@
-#fuzzy1
 import matplotlib.pyplot as plt
     
 height = 1
